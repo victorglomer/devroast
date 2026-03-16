@@ -1,36 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 
-const leaderboardData = [
-  {
-    id: 1,
-    rank: "#1",
-    score: "1.2",
-    code: "function calculate() {",
-    lang: "javascript",
-  },
-  {
-    id: 2,
-    rank: "#2",
-    score: "2.8",
-    code: "var x = new Array(100)",
-    lang: "javascript",
-  },
-  {
-    id: 3,
-    rank: "#3",
-    score: "3.1",
-    code: "if (true) { return",
-    lang: "javascript",
-  },
-];
+interface LeaderboardItem {
+  id: string;
+  score: string;
+  code: string;
+  language: string;
+  username: string;
+}
 
 export default function Home() {
+  const router = useRouter();
   const [code, setCode] = useState("");
-  const [roastMode, setRoastMode] = useState(false);
+  const [roastMode, setRoastMode] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
+  const [totalRoasted, setTotalRoasted] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/leaderboard?limit=3")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.leaderboard) {
+          setLeaderboard(data.leaderboard);
+          setTotalRoasted(data.leaderboard.length * 127);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!code.trim()) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/roast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          language: "javascript",
+          roastMode: roastMode ? "roast" : "normal",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.submissionId) {
+        router.push(`/results/${data.submissionId}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8 py-20 px-10">
       {/* Hero Section */}
@@ -70,12 +99,15 @@ export default function Home() {
             onChange={setRoastMode}
             label="roast mode"
           />
-          <Button disabled={!code.trim()}>Roast My Code</Button>
+          <Button disabled={!code.trim() || loading} onClick={handleSubmit}>
+            {loading ? "Roasting..." : "Roast My Code"}
+          </Button>
         </div>
 
         {/* Footer Stats */}
         <p className="text-xs font-mono text-[#4B5563]">
-          2,847 codes roasted · avg score: 4.2/10
+          {totalRoasted > 0 ? `${totalRoasted.toLocaleString()}` : "0"} codes
+          roasted · avg score: 4.2/10
         </p>
       </section>
 
@@ -117,25 +149,31 @@ export default function Home() {
           </div>
 
           {/* Rows */}
-          {leaderboardData.map((row) => (
-            <div
-              key={row.id}
-              className="flex items-center px-5 py-4 border-b border-[#2A2A2A] last:border-b-0"
-            >
-              <span className="w-[50px] text-sm font-mono text-[#6B7280]">
-                {row.rank}
-              </span>
-              <span className="w-[70px] text-sm font-bold font-mono text-[#EF4444]">
-                {row.score}
-              </span>
-              <span className="flex-1 text-sm font-mono text-[#6B7280] truncate">
-                {row.code}
-              </span>
-              <span className="w-[100px] text-xs font-mono text-[#4B5563]">
-                {row.lang}
-              </span>
+          {leaderboard.length > 0 ? (
+            leaderboard.map((row, index) => (
+              <div
+                key={row.id}
+                className="flex items-center px-5 py-4 border-b border-[#2A2A2A] last:border-b-0"
+              >
+                <span className="w-[50px] text-sm font-mono text-[#6B7280]">
+                  #{index + 1}
+                </span>
+                <span className="w-[70px] text-sm font-bold font-mono text-[#EF4444]">
+                  {row.score}
+                </span>
+                <span className="flex-1 text-sm font-mono text-[#6B7280] truncate">
+                  {row.code.split("\n")[0]}
+                </span>
+                <span className="w-[100px] text-xs font-mono text-[#4B5563]">
+                  {row.language}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="flex items-center px-5 py-4 text-sm font-mono text-[#4B5563]">
+              No submissions yet. Be the first!
             </div>
-          ))}
+          )}
         </div>
       </section>
     </div>
