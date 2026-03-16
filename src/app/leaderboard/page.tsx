@@ -139,6 +139,7 @@ export default async function LeaderboardPage() {
               <CodeBlock
                 code={entry.code}
                 language={entry.language}
+                showHeader={false}
               />
             </div>
           ))}

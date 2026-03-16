@@ -6,6 +6,7 @@ export interface CodeBlockProps {
   language?: string;
   filename?: string;
   className?: string;
+  showHeader?: boolean;
 }
 
 export async function CodeBlock({
@@ -13,6 +14,7 @@ export async function CodeBlock({
   language = "javascript",
   filename,
   className,
+  showHeader = true,
 }: CodeBlockProps) {
   const html = await codeToHtml(code.trim(), {
     lang: language,
@@ -26,24 +28,29 @@ export async function CodeBlock({
         className,
       )}
     >
+      {showHeader && (
+        <div
+          className="flex items-center gap-3 h-10 px-4 border-b border-[#2A2A2A]"
+          data-header
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          {filename && (
+            <>
+              <span className="flex-1" />
+              <span className="text-xs text-neutral-500 font-mono">
+                {filename}
+              </span>
+            </>
+          )}
+        </div>
+      )}
       <div
-        className="flex items-center gap-3 h-10 px-4 border-b border-[#2A2A2A]"
-        data-header
-      >
-        <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-        {filename && (
-          <>
-            <span className="flex-1" />
-            <span className="text-xs text-neutral-500 font-mono">
-              {filename}
-            </span>
-          </>
+        className={cn(
+          "font-mono text-sm [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-4 [&_pre]:!overflow-x-auto",
+          !showHeader && "[&_pre]:!p-5",
         )}
-      </div>
-      <div
-        className="font-mono text-sm [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-4 [&_pre]:!overflow-x-auto"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </div>
