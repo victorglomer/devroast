@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/ui/navbar";
+import { TRPCProvider } from "@/trpc/provider";
 
 export const metadata: Metadata = {
   title: "Devroast - Brutally Honest Code Review",
@@ -16,8 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[#0A0A0A] antialiased">
-        <Navbar />
-        <main className="max-w-5xl mx-auto">{children}</main>
+        <TRPCProvider>
+          <Navbar />
+          <main className="max-w-5xl mx-auto">{children}</main>
+        </TRPCProvider>
       </body>
     </html>
   );

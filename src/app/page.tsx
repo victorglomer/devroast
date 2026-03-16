@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
+import { MetricsSection } from "@/components/metrics-section";
 
 interface LeaderboardItem {
   id: string;
@@ -19,7 +20,6 @@ export default function Home() {
   const [roastMode, setRoastMode] = useState(true);
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
-  const [totalRoasted, setTotalRoasted] = useState(0);
 
   useEffect(() => {
     fetch("/api/leaderboard?limit=3")
@@ -27,7 +27,6 @@ export default function Home() {
       .then((data) => {
         if (data.leaderboard) {
           setLeaderboard(data.leaderboard);
-          setTotalRoasted(data.leaderboard.length * 127);
         }
       })
       .catch(console.error);
@@ -105,10 +104,7 @@ export default function Home() {
         </div>
 
         {/* Footer Stats */}
-        <p className="text-xs font-mono text-[#4B5563]">
-          {totalRoasted > 0 ? `${totalRoasted.toLocaleString()}` : "0"} codes
-          roasted · avg score: 4.2/10
-        </p>
+        <MetricsSection />
       </section>
 
       {/* Leaderboard Preview */}
