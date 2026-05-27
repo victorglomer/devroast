@@ -11,7 +11,6 @@ export interface LeaderboardEntry extends Record<string, unknown> {
   verdict: string;
   username: string;
   lineCount: number;
-  createdAt: Date;
 }
 
 export interface GetTopResponse {
@@ -22,7 +21,7 @@ export interface GetTopResponse {
 
 export const leaderboardRouter = router({
   getTop: publicProcedure
-    .input(z.object({ limit: z.number().default(20) }))
+    .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
     .query(async ({ ctx, input }): Promise<GetTopResponse> => {
       const [entries, metricsResult] = await Promise.all([
         ctx.db.execute<LeaderboardEntry>(sql`
@@ -33,8 +32,7 @@ export const leaderboardRouter = router({
             r.score,
             r.verdict,
             u.username,
-            r.line_count as "lineCount",
-            r.created_at as "createdAt"
+            r.line_count as "lineCount"
           FROM submissions s
           JOIN roasts r ON r.submission_id = s.id
           JOIN users u ON u.id = s.user_id
