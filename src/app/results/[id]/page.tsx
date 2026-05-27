@@ -1,89 +1,35 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ScoreRing } from "@/components/ui/score-ring";
+import { getSubmissionWithRoast } from "@/db/queries";
 
 export const metadata = {
   title: "Roast Results - Devroast",
   description: "Your code has been roasted",
 };
 
-const MOCK_RESULT = {
-  id: "1",
-  score: 3.5,
-  verdict: "needs_serious_help",
-  roastTitle:
-    "this code looks like it was written during a power outage... in 2005.",
-  language: "javascript",
-  lineCount: 7,
-  code: `function calculateTotal(items) {
-  var total = 0;
-  for (var i = 0; i < items.length; i++) {
-    total = total + items[i].price;
-  }
-  if (total > 100) {
-    console.log("discount applied");
-    total = total * 0.9;
-  }
-  // TODO: handle tax calculation
-  // TODO: handle currency conversion
-  return total;
-}`,
-  issues: [
-    {
-      title: "using var instead of const/let",
-      description:
-        "var is function-scoped and leads to hoisting bugs. use const by default, let when reassignment is needed.",
-      severity: "critical",
-      lineNumber: 3,
-    },
-    {
-      title: "imperative loop pattern",
-      description:
-        "for loops are verbose and error-prone. use .reduce() or .map() for cleaner, functional transformations.",
-      severity: "warning",
-      lineNumber: 3,
-    },
-    {
-      title: "clear naming conventions",
-      description:
-        "calculateTotal and items are descriptive, self-documenting names that communicate intent without comments.",
-      severity: "good",
-      lineNumber: null,
-    },
-    {
-      title: "single responsibility",
-      description:
-        "the function does one thing well — calculates a total. no side effects, no mixed concerns, no hidden complexity.",
-      severity: "good",
-      lineNumber: null,
-    },
-  ],
-  diff: `function calculateTotal(items) {
--  var total = 0;
--  for (var i = 0; i < items.length; i++) {
--    total = total + items[i].price;
--  }
--  if (total > 100) {
--    console.log("discount applied");
--    total = total * 0.9;
--  }
-+  const total = items.reduce((sum, item) => sum + item.price, 0);
-+  
-+  if (total > 100) {
-+    console.log("discount applied");
-+    return total * 0.9;
-+  }
-+  
-   // TODO: handle tax calculation
-   // TODO: handle currency conversion
--  return total;
-+  return total;
- }`,
-};
+export default async function ResultsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const result = await getSubmissionWithRoast(id);
 
-export default async function ResultsPage() {
-  const result = MOCK_RESULT;
+  if (!result) {
+    notFound();
+  }
+
+  const score = Number(result.score);
+  const issues = result.issues as Array<{
+    title: string;
+    description: string;
+    severity: "critical" | "warning" | "good";
+    lineNumber: number | null;
+  }>;
+  const suggestions = result.suggestions as Array<{ diff: string }> | null;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -108,16 +54,10 @@ export default async function ResultsPage() {
 
         {/* Score Hero */}
         <section className="flex items-center justify-center gap-12">
-          <ScoreRing score={result.score} size={180} />
+          <ScoreRing score={score} size={180} />
           <div className="flex flex-col gap-4 max-w-md">
             <Badge
-              variant={
-                result.score < 4
-                  ? "critical"
-                  : result.score < 7
-                    ? "warning"
-                    : "good"
-              }
+              variant={score < 4 ? "critical" : score < 7 ? "warning" : "good"}
             >
               verdict: {result.verdict}
             </Badge>
@@ -136,30 +76,27 @@ export default async function ResultsPage() {
         <section className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold font-mono text-[#10B981]">
-              {'//'}
+              {"//"}
             </span>
             <h2 className="text-sm font-bold font-mono text-[#FAFAFA]">
               your_submission
             </h2>
           </div>
-          <CodeBlock
-            code={result.code}
-            language={result.language}
-          />
+          <CodeBlock code={result.code} language={result.language} />
         </section>
 
         {/* Detailed Analysis */}
         <section className="flex flex-col gap-6">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold font-mono text-[#10B981]">
-              {'//'}
+              {"//"}
             </span>
             <h2 className="text-sm font-bold font-mono text-[#FAFAFA]">
               detailed_analysis
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-5">
-            {result.issues.map((issue) => (
+            {issues.map((issue) => (
               <div
                 key={issue.title}
                 className="flex flex-col gap-3 p-5 rounded-md border border-[#2A2A2A] bg-[#0F0F0F]"
@@ -206,7 +143,7 @@ export default async function ResultsPage() {
         <section className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold font-mono text-[#10B981]">
-              {'//'}
+              {"//"}
             </span>
             <h2 className="text-sm font-bold font-mono text-[#FAFAFA]">
               suggested_fix
@@ -218,96 +155,12 @@ export default async function ResultsPage() {
                 your_code.ts → improved_code.ts
               </span>
             </div>
-            <div className="flex flex-col py-1">
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#FAFAFA]">
-                  function calculateTotal(items) {"{"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#EF4444]/10">
-                <span className="text-sm font-mono text-[#EF4444]">
-                  - var total = 0;
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#EF4444]/10">
-                <span className="text-sm font-mono text-[#EF4444]">
-                  - for (var i = 0; i {"<"} items.length; i++) {"{"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#EF4444]/10">
-                <span className="text-sm font-mono text-[#EF4444]">
-                  - total = total + items[i].price;
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#EF4444]/10">
-                <span className="text-sm font-mono text-[#EF4444]">
-                  {"}"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#EF4444]/10">
-                <span className="text-sm font-mono text-[#EF4444]">
-                  - if (total {" > "} 100) {"{"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#10B981]/10">
-                <span className="text-sm font-mono text-[#10B981]">
-                  + const total = items.reduce((sum, item) ={">"} sum +
-                  item.price, 0);
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#FAFAFA]">
-                  +
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#10B981]/10">
-                <span className="text-sm font-mono text-[#10B981]">
-                  + if (total {" > "} 100) {"{"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#10B981]/10">
-                <span className="text-sm font-mono text-[#10B981]">
-                  + console.log(&quot;discount applied&quot;);
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#10B981]/10">
-                <span className="text-sm font-mono text-[#10B981]">
-                  + return total * 0.9;
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4 bg-[#10B981]/10">
-                <span className="text-sm font-mono text-[#10B981]">
-                  {"}"}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#FAFAFA]">
-                  +
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#6B7280]">
-                  {'// TODO: handle tax calculation'}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#6B7280]">
-                  {'// TODO: handle currency conversion'}
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#FAFAFA]">
-                  - return total;
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#10B981]">
-                  + return total;
-                </span>
-              </div>
-              <div className="flex items-center h-7 px-4">
-                <span className="text-sm font-mono text-[#FAFAFA]">{"}"}</span>
-              </div>
+            <div className="p-4">
+              <CodeBlock
+                code={suggestions?.[0]?.diff ?? "No suggestions"}
+                language="diff"
+                showHeader={false}
+              />
             </div>
           </div>
         </section>
