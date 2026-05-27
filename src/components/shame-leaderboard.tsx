@@ -1,9 +1,12 @@
 import { sql } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { db } from "@/db";
 import { getLeaderboard } from "@/db/queries";
 import { roasts } from "@/db/schema";
 
 export async function ShameLeaderboard() {
+  "use cache";
+  cacheLife("hourly");
   const [leaderboard, metricsResult] = await Promise.all([
     getLeaderboard(3),
     db

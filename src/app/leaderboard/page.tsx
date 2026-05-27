@@ -1,10 +1,9 @@
+import { cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { CodeBlock } from "@/components/ui/code-block";
 import { createCallerFactory, createTRPCContext } from "@/trpc/init";
 import { appRouter } from "@/trpc/routers/_app";
 import { LeaderboardMetrics } from "./leaderboard-metrics";
-
-export const revalidate = 3600;
 
 const createCaller = createCallerFactory(appRouter);
 
@@ -53,6 +52,8 @@ function LeaderboardSkeleton() {
 }
 
 async function LeaderboardData() {
+  "use cache";
+  cacheLife("hourly");
   const caller = createCaller(await createTRPCContext());
   const data = await caller.leaderboard.getTop({ limit: 20 });
 
