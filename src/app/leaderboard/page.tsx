@@ -4,6 +4,8 @@ import { createCallerFactory, createTRPCContext } from "@/trpc/init";
 import { appRouter } from "@/trpc/routers/_app";
 import { LeaderboardMetrics } from "./leaderboard-metrics";
 
+export const revalidate = 3600;
+
 const createCaller = createCallerFactory(appRouter);
 
 function LeaderboardSkeleton() {
