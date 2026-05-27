@@ -10,23 +10,23 @@ export function HeroSection() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [roastMode, setRoastMode] = useState(true);
-  const mutation = trpc.roast.submit.useMutation();
+  const [error, setError] = useState<string | null>(null);
+  const mutation = trpc.roast.submit.useMutation({
+    onSuccess: (data) => {
+      router.push(`/results/${data.submissionId}`);
+    },
+    onError: (err) => setError(err.message),
+  });
 
   const handleSubmit = () => {
     if (!code.trim()) return;
 
-    mutation.mutate(
-      {
-        code,
-        language: "javascript",
-        roastMode: roastMode ? "roast" : "normal",
-      },
-      {
-        onSuccess: (data) => {
-          router.push(`/results/${data.submissionId}`);
-        },
-      },
-    );
+    setError(null);
+    mutation.mutate({
+      code,
+      language: "javascript",
+      roastMode: roastMode ? "roast" : "normal",
+    });
   };
 
   return (
@@ -54,6 +54,8 @@ export function HeroSection() {
           onChange={(e) => setCode(e.target.value)}
         />
       </div>
+
+      {error && <p className="text-xs font-mono text-red-500">{error}</p>}
 
       <div className="w-[780px] flex items-center justify-between">
         <Toggle

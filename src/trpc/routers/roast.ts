@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createRoast, createSubmission, getUserByUsername } from "@/db/queries";
-import { users } from "@/db/schema";
+import { getUserByUsername } from "@/db/queries";
+import { roasts, submissions, users } from "@/db/schema";
 import { analyzeCode } from "@/lib/gemini";
 import { publicProcedure, router } from "../init";
 
@@ -39,44 +39,51 @@ export const roastRouter = router({
         const [newUser] = await ctx.db
           .insert(users)
           .values({ username: MOCK_USERNAME })
+          .onConflictDoNothing()
           .returning();
 
-        if (!newUser) {
-          throw new Error("Failed to create user");
+        if (newUser) {
+          user = {
+            id: newUser.id,
+            username: newUser.username,
+            createdAt: newUser.createdAt,
+          };
+        } else {
+          user = await getUserByUsername(MOCK_USERNAME);
+          if (!user) {
+            throw new Error("Failed to create user");
+          }
         }
-
-        user = {
-          id: newUser.id,
-          username: newUser.username,
-          createdAt: newUser.createdAt,
-        };
-      }
-
-      const submissionId = await createSubmission({
-        userId: user.id,
-        code: input.code,
-        language: input.language,
-        roastMode: input.roastMode,
-      });
-
-      if (!submissionId) {
-        throw new Error("Failed to create submission");
       }
 
       const analysis = await analyzeCode(input.code, input.roastMode);
 
-      await createRoast({
-        submissionId,
-        verdict: analysis.verdict,
-        roastTitle: analysis.roastTitle,
-        score: analysis.score.toFixed(1),
-        lineCount: analysis.lineCount,
-        issues: analysis.issues,
-        suggestions: analysis.suggestions,
+      const [submission] = await ctx.db.transaction(async (tx) => {
+        const [sub] = await tx
+          .insert(submissions)
+          .values({
+            userId: user.id,
+            code: input.code,
+            language: input.language,
+            roastMode: input.roastMode,
+          })
+          .returning({ id: submissions.id });
+
+        await tx.insert(roasts).values({
+          submissionId: sub.id,
+          verdict: analysis.verdict,
+          roastTitle: analysis.roastTitle,
+          score: analysis.score.toFixed(1),
+          lineCount: analysis.lineCount,
+          issues: analysis.issues,
+          suggestions: analysis.suggestions,
+        });
+
+        return [sub];
       });
 
       return {
-        submissionId,
+        submissionId: submission.id,
         score: analysis.score,
         verdict: analysis.verdict,
         roastTitle: analysis.roastTitle,

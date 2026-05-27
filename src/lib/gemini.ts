@@ -1,7 +1,31 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { z } from "zod";
 import { NORMAL_PROMPT, ROAST_PROMPT } from "./prompts";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set");
+const genAI = new GoogleGenerativeAI(apiKey);
+
+const geminiResponseSchema = z.object({
+  verdict: z.string(),
+  roastTitle: z.string(),
+  score: z.number().min(0).max(10),
+  lineCount: z.number().int().positive(),
+  issues: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      severity: z.enum(["critical", "warning", "good"]),
+      lineNumber: z.number().int().nullable(),
+    }),
+  ),
+  suggestions: z.array(
+    z.object({
+      filename: z.string(),
+      diff: z.string(),
+    }),
+  ),
+});
 
 export interface GeminiIssue {
   title: string;
@@ -47,11 +71,7 @@ export async function analyzeCode(
   });
 
   const text = result.response.text();
-  const parsed = JSON.parse(text) as GeminiRoastResponse;
+  const parsed = geminiResponseSchema.parse(JSON.parse(text));
 
-  return {
-    ...parsed,
-    score: Number(parsed.score),
-    lineCount: Number(parsed.lineCount),
-  };
+  return parsed;
 }
