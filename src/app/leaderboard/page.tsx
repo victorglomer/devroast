@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { CodeBlock } from "@/components/ui/code-block";
-import { trpc } from "@/trpc/server";
+import { createCallerFactory, createTRPCContext } from "@/trpc/init";
+import { appRouter } from "@/trpc/routers/_app";
 import { LeaderboardMetrics } from "./leaderboard-metrics";
+
+const createCaller = createCallerFactory(appRouter);
 
 function LeaderboardSkeleton() {
   return (
@@ -48,7 +51,8 @@ function LeaderboardSkeleton() {
 }
 
 async function LeaderboardData() {
-  const data = await trpc.leaderboard.getTop({ limit: 20 });
+  const caller = createCaller(await createTRPCContext());
+  const data = await caller.leaderboard.getTop({ limit: 20 });
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
