@@ -4,38 +4,29 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
+import { trpc } from "@/trpc/client";
 
 export function HeroSection() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [roastMode, setRoastMode] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const mutation = trpc.roast.submit.useMutation();
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!code.trim()) return;
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/roast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          language: "javascript",
-          roastMode: roastMode ? "roast" : "normal",
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.submissionId) {
-        router.push(`/results/${data.submissionId}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
+    mutation.mutate(
+      {
+        code,
+        language: "javascript",
+        roastMode: roastMode ? "roast" : "normal",
+      },
+      {
+        onSuccess: (data) => {
+          router.push(`/results/${data.submissionId}`);
+        },
+      },
+    );
   };
 
   return (
@@ -70,8 +61,11 @@ export function HeroSection() {
           onChange={setRoastMode}
           label="roast mode"
         />
-        <Button disabled={!code.trim() || loading} onClick={handleSubmit}>
-          {loading ? "Roasting..." : "Roast My Code"}
+        <Button
+          disabled={!code.trim() || mutation.isPending}
+          onClick={handleSubmit}
+        >
+          {mutation.isPending ? "Roasting..." : "Roast My Code"}
         </Button>
       </div>
     </section>
