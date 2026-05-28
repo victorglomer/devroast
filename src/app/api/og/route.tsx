@@ -75,6 +75,9 @@ export async function GET(request: Request) {
     }
 
     const fonts = await loadJetBrainsMonoFonts();
+    if (fonts.length === 0) {
+      throw new Error("Failed to load JetBrains Mono fonts for OG image");
+    }
 
     const response = new ImageResponse(
       <OgImage
