@@ -3,8 +3,6 @@ import { OgImage } from "@/components/og-image";
 import { getSubmissionWithRoast } from "@/db/queries";
 import { loadJetBrainsMonoFonts } from "@/lib/og-fonts";
 
-export const runtime = "nodejs";
-
 async function fallbackResponse(): Promise<ImageResponse> {
   const response = new ImageResponse(
     <div
@@ -43,7 +41,7 @@ async function fallbackResponse(): Promise<ImageResponse> {
       </div>
       <span
         style={{
-          fontFamily: "Geist, sans-serif",
+          fontFamily: "sans-serif",
           fontSize: 36,
           fontWeight: 600,
           color: "#A1A1AA",
