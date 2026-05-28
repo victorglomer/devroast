@@ -33,7 +33,12 @@ export function parseGoogleFontsCss(css: string): FontFaceDecl[] {
     .filter((decl): decl is FontFaceDecl => decl !== null);
 }
 
+let cachedFonts: Font[] | null = null;
+
 export async function loadJetBrainsMonoFonts(): Promise<Font[]> {
+  if (cachedFonts && cachedFonts.length > 0) {
+    return cachedFonts;
+  }
   const cssUrl =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;900&display=swap";
 
@@ -69,7 +74,10 @@ export async function loadJetBrainsMonoFonts(): Promise<Font[]> {
     }),
   );
 
-  return (results as PromiseSettledResult<Font>[])
+  const fonts = (results as PromiseSettledResult<Font>[])
     .filter((r) => r.status === "fulfilled")
     .map((r) => r.value);
+
+  cachedFonts = fonts;
+  return fonts;
 }

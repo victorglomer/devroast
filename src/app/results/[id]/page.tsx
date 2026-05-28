@@ -24,7 +24,7 @@ export async function generateMetadata({
     };
   }
 
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000"}/api/og?submissionId=${id}`;
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000"}/api/og?submissionId=${encodeURIComponent(id)}`;
 
   return {
     title: `Roast Results - Devroast`,
