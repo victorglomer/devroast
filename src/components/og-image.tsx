@@ -9,7 +9,7 @@ interface OgImageProps {
 }
 
 function formatScore(score: number): string {
-  return Number.isInteger(score) ? `${score}.0` : String(score);
+  return score % 1 === 0 ? score.toFixed(1) : score.toString();
 }
 
 function getVerdictColor(score: number): string {
@@ -26,6 +26,7 @@ const containerStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
+  alignItems: "center",
   gap: 28,
 };
 
@@ -133,16 +134,19 @@ export function OgImage({
         <span style={scoreDividerStyle}>/10</span>
       </div>
 
-      <div style={verdictRowStyle}>
-        <span style={getVerdictDotStyle(verdictColor)} />
-        <span style={getVerdictTextStyle(verdictColor)}>{verdict}</span>
-      </div>
+      {verdict && (
+        <div style={verdictRowStyle}>
+          <span style={getVerdictDotStyle(verdictColor)} />
+          <span style={getVerdictTextStyle(verdictColor)}>{verdict}</span>
+        </div>
+      )}
 
       <div style={metaStyle}>
-        lang: {language} &middot; {lineCount} lines
+        {language ? `lang: ${language} \u00B7 ` : ""}
+        {lineCount} lines
       </div>
 
-      <div style={quoteStyle}>&ldquo;{roastTitle}&rdquo;</div>
+      <div style={quoteStyle}>&ldquo;{roastTitle || "\u2014"}&rdquo;</div>
     </div>
   );
 }
