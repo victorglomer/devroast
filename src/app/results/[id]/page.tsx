@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { ShareButton } from "@/components/share-button";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ScoreRing } from "@/components/ui/score-ring";
@@ -109,6 +110,7 @@ export default async function ResultsPage({
               <span>·</span>
               <span>{result.lineCount} lines</span>
             </div>
+            <ShareButton submissionId={id} />
           </div>
         </section>
 
