@@ -37,22 +37,39 @@ export async function loadJetBrainsMonoFonts(): Promise<Font[]> {
   const cssUrl =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;900&display=swap";
 
-  const cssResponse = await fetch(cssUrl);
+  const cssResponse = await fetch(cssUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+  });
+
+  if (!cssResponse.ok)
+    throw new Error(`Google Fonts returned ${cssResponse.status}`);
+
   const css = await cssResponse.text();
 
   const decls = parseGoogleFontsCss(css);
 
-  const fontPromises = decls.map(async (decl) => {
-    const response = await fetch(decl.url);
-    const data = await response.arrayBuffer();
+  const results = await Promise.allSettled(
+    decls.map(async (decl) => {
+      const fontResponse = await fetch(decl.url);
+      if (!fontResponse.ok)
+        throw new Error(
+          `Font fetch failed for weight ${decl.weight}: ${fontResponse.status}`,
+        );
+      const data = new Uint8Array(await fontResponse.arrayBuffer());
 
-    return {
-      name: "JetBrains Mono",
-      data,
-      weight: decl.weight,
-      style: decl.style,
-    } satisfies Font;
-  });
+      return {
+        name: "JetBrains Mono",
+        data,
+        weight: decl.weight,
+        style: decl.style,
+      } satisfies Font;
+    }),
+  );
 
-  return Promise.all(fontPromises);
+  return (results as PromiseSettledResult<Font>[])
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => r.value);
 }
