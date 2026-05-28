@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { getSubmissionWithRoast } from "@/db/queries";
+
+const getSubmission = cache(getSubmissionWithRoast);
 
 export async function generateMetadata({
   params,
@@ -12,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const result = await getSubmissionWithRoast(id);
+  const result = await getSubmission(id);
 
   if (!result) {
     return {
@@ -53,7 +56,7 @@ export default async function ResultsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getSubmissionWithRoast(id);
+  const result = await getSubmission(id);
 
   if (!result) {
     notFound();
