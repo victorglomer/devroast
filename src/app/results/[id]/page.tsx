@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -5,10 +6,46 @@ import { CodeBlock } from "@/components/ui/code-block";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { getSubmissionWithRoast } from "@/db/queries";
 
-export const metadata = {
-  title: "Roast Results - Devroast",
-  description: "Your code has been roasted",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const result = await getSubmissionWithRoast(id);
+
+  if (!result) {
+    return {
+      title: "Roast Results - Devroast",
+      description: "Your code has been roasted",
+    };
+  }
+
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000"}/api/og?submissionId=${id}`;
+
+  return {
+    title: `Roast Results - Devroast`,
+    description: `${result.roastTitle} — Score: ${result.score}/10`,
+    openGraph: {
+      title: `devroast — ${result.roastTitle}`,
+      description: `Score: ${result.score}/10 · Verdict: ${result.verdict} · ${result.language}, ${result.lineCount} lines`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `Roast result for ${result.language} code`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `devroast — ${result.roastTitle}`,
+      description: `Score: ${result.score}/10 · Verdict: ${result.verdict} · ${result.language}, ${result.lineCount} lines`,
+      images: [ogImageUrl],
+    },
+  };
+}
 
 export default async function ResultsPage({
   params,
